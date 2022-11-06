@@ -1,8 +1,3 @@
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-
 module Options.Harg.Construct
   ( option,
     flag,
@@ -37,10 +32,9 @@ module Options.Harg.Construct
 where
 
 import Data.Char (toLower)
-import Data.Kind (Constraint)
 import Data.List.Split (splitOn)
 import Data.String (IsString (..))
-import GHC.TypeLits (AppendSymbol, ErrorMessage (..), Symbol, TypeError)
+import Options.Harg.Construct.Internal
 import Options.Harg.Types
 import Text.Read (readMaybe)
 
@@ -421,47 +415,3 @@ manyParser ::
   OptReader [a]
 manyParser sep parser =
   traverse parser . splitOn sep
-
--- | Wrap a symbol in quotes, for pretty printing in type errors.
-type QuoteSym (s :: Symbol) =
-  'Text "`" :<>: 'Text s :<>: 'Text "`"
-
--- | Check if `x` is not an element of the type-level list `xs`. If it is
--- print the appropriate error message using `l` and `r` for clarity.
-type family
-  NotInAttrs
-    (x :: k)
-    (xs :: [k])
-    (err :: ErrorMessage) ::
-    Constraint
-  where
-  NotInAttrs _ '[] _ =
-    ()
-  NotInAttrs x (x ': _) err =
-    TypeError err
-  NotInAttrs x (y ': xs) err =
-    NotInAttrs x xs err
-
-type family CommaSep (xs :: [Symbol]) :: Symbol where
-  CommaSep '[] = ""
-  CommaSep '[x] = " or " `AppendSymbol` x
-  CommaSep (x ': xs) = " or one of " `AppendSymbol` CommaSep' x xs
-
-type family CommaSep' (s :: Symbol) (xs :: [Symbol]) :: Symbol where
-  CommaSep' s '[] = s
-  CommaSep' s (x ': xs) = CommaSep' (s `AppendSymbol` ", " `AppendSymbol` x) xs
-
-type DuplicateAttrErr attr =
-  QuoteSym attr
-    :<>: 'Text " is already specified."
-
-type DuplicateAttrMultipleErr attr rest =
-  QuoteSym attr
-    :<>: 'Text (CommaSep rest)
-    :<>: 'Text " has already been specified."
-
-type IncompatibleAttrsErr l r =
-  QuoteSym l
-    :<>: 'Text " and "
-    :<>: QuoteSym r
-    :<>: 'Text " cannot be mixed in an option definition."

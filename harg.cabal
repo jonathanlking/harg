@@ -36,6 +36,7 @@ library
         Options.Harg.Cmdline
         Options.Harg.Config
         Options.Harg.Construct
+        Options.Harg.Construct.Internal
         Options.Harg.Het.All
         Options.Harg.Het.HList
         Options.Harg.Het.Nat
